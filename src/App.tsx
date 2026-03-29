@@ -184,7 +184,7 @@ export default function App() {
           userRole={userRole}
         />
       )}
-      <ZuriChat apiKey={app.geminiApiKey} />
+      <ZuriChat />
     </div>
   );
 }
