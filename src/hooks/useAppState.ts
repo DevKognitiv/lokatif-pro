@@ -16,8 +16,6 @@ export function useAppState() {
   const [unreadMessages, setUnreadMessages] = useState(2);
   const [unreadNotifications, setUnreadNotifications] = useState(3);
 
-  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-
   const currentUser: User = { ...mockUsers[0], role: userRole };
 
   const navigate = useCallback((newScreen: Screen, property?: Property, conversationId?: string) => {
@@ -62,7 +60,7 @@ export function useAppState() {
   return {
     screen, previousScreen, selectedProperty, selectedConversationId,
     currentUser, isAuthenticated, userRole, favorites, compareList,
-    filters, searchQuery, unreadMessages, unreadNotifications, geminiApiKey,
+    filters, searchQuery, unreadMessages, unreadNotifications,
     navigate, goBack, setAuthenticated, logout, toggleFavorite, toggleCompare,
     clearCompare, setFilters, resetFilters, setSearchQuery,
     markNotificationsRead, markMessagesRead,
