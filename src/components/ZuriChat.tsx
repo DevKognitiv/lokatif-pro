@@ -10,46 +10,21 @@ interface Message {
  * ZuriChat — Lokatif AI Assistant
  *
  * Security architecture:
- * - In production: calls /api/gemini (Vercel Edge Function proxy)
- *   → API key lives server-side only, never exposed to the browser
- * - In development: falls back to direct Gemini call using VITE_GEMINI_API_KEY
- *   (acceptable for local dev, never reaches production bundle)
+ * - All Gemini traffic (dev and prod) is routed through /api/gemini,
+ *   the Vercel Edge Function proxy. The API key lives server-side only
+ *   and never reaches the browser bundle.
+ * - The system prompt, model, and generation limits are enforced by the
+ *   server; the client only sends conversation `contents`.
  */
 
-const SYSTEM_PROMPT = `Tu es Zuri, une assistante IA de Lokatif — la plateforme de location immobilière en Côte d'Ivoire.
-Tu es une jeune femme ivoirienne, éduquée, intelligente et chaleureuse. Tu utilises parfois des expressions ivoiriennes pour mieux te connecter avec les utilisateurs (ex: "djo", "on va gérer ça", "c'est bon là").
-Tu aides les locataires et propriétaires avec :
-- La recherche de logements à Abidjan et en Côte d'Ivoire
-- Les questions sur la loi ivoirienne de location (dépôt de garantie = 2 mois, premier paiement = 4 mois)
-- Les quartiers d'Abidjan (Cocody, Plateau, Marcory, Yopougon, Treichville, Riviera, Adjamé, Zone 4, etc.)
-- Les prix du marché immobilier en FCFA (studios: 80k-150k, T2: 150k-300k, villas: 400k+)
-- Les démarches administratives pour la location (contrat de bail, état des lieux, caution)
-- Les paiements Mobile Money (Wave, Orange Money, MTN)
-- Les conseils pour propriétaires (publier une annonce, gérer les locataires, fixer le loyer)
-- La sécurité dans les transactions immobilières
-Réponds toujours en français, de manière concise et utile. Utilise des emojis avec modération. Sois directe et pratique.`;
-
-// Detect environment: use proxy in production, direct call in dev
-const IS_PROD = import.meta.env.PROD;
+// All Gemini calls go through the server-side proxy — never call Google directly.
 const PROXY_URL = '/api/gemini';
-const GEMINI_DIRECT_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY ?? ''}`;
 
 async function callGemini(contents: object[]): Promise<string> {
-  const payload = {
-    system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-    contents,
-    generationConfig: {
-      temperature: 0.75,
-      maxOutputTokens: 600,
-    },
-  };
-
-  const url = IS_PROD ? PROXY_URL : GEMINI_DIRECT_URL;
-
-  const response = await fetch(url, {
+  const response = await fetch(PROXY_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ contents }),
   });
 
   if (!response.ok) {
@@ -219,7 +194,7 @@ export default function ZuriChat() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
                 <Shield size={10} color="#C9A84C" />
                 <p style={{ color: '#C9A84C', fontSize: 11, margin: 0 }}>
-                  {IS_PROD ? 'Connexion sécurisée' : 'Mode développement'}
+                  Connexion sécurisée
                 </p>
               </div>
             </div>
